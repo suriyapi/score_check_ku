@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบตรวจคะแนนสอบ KU</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #222536;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.15);
+    --text: #e8eaf0;
+    --muted: #7b7f96;
+    --green: #22c55e;
+    --green-dim: rgba(34,197,94,0.12);
+    --red: #ef4444;
+    --red-dim: rgba(239,68,68,0.12);
+    --amber: #f59e0b;
+    --amber-dim: rgba(245,158,11,0.12);
+    --accent: #6366f1;
+    --accent-dim: rgba(99,102,241,0.15);
+    --ku-green: #1a7a3c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans Thai', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  /* ===== LOGIN ===== */
+  #login-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 0;
+    background: var(--bg);
+    position: relative;
+    overflow: hidden;
+  }
+  #login-screen::before {
+    content: '';
+    position: absolute;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -60%);
+    pointer-events: none;
+  }
+  .login-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    padding: 48px 40px 40px;
+    width: 380px;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+  }
+  .ku-logo {
+    width: 56px; height: 56px;
+    background: linear-gradient(135deg, #1a7a3c, #0f4d25);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; font-weight: 600; color: #fff;
+    margin: 0 auto 20px;
+    letter-spacing: -1px;
+  }
+  .login-card h1 { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+  .login-card p { font-size: 13px; color: var(--muted); margin-bottom: 32px; }
+  .google-btn {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%; padding: 12px 20px;
+    background: #fff; color: #1f1f1f;
+    border: none; border-radius: 10px;
+    font-family: 'Noto Sans Thai', sans-serif;
+    font-size: 14px; font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+  .google-btn:hover { opacity: 0.92; }
+  .google-btn:active { transform: scale(0.98); }
+  .google-btn svg { flex-shrink: 0; }
+  .login-notice {
+    margin-top: 16px;
+    font-size: 11px; color: var(--muted);
+    background: var(--accent-dim);
+    border: 1px solid rgba(99,102,241,0.2);
+    border-radius: 8px;
+    padding: 8px 12px;
+  }
+  /* ===== APP ===== */
+  #app-screen { display: none; min-height: 100vh; }
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 52px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .topbar-logo {
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, #1a7a3c, #0f4d25);
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #fff;
+  }
+  .topbar-title { font-size: 14px; font-weight: 600; }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .user-badge {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 12px 4px 6px;
+    font-size: 12px; color: var(--muted);
+  }
+  .user-avatar {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--accent-dim); overflow: hidden;
+  }
+  .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .save-status {
+    font-size: 12px; color: var(--muted);
+    display: flex; align-items: center; gap: 5px;
+  }
+  .save-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+  .save-dot.saving { background: var(--amber); animation: pulse 1s infinite; }
+  .save-dot.saved { background: var(--green); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .main { display: grid; grid-template-columns: 300px 1fr; min-height: calc(100vh - 52px); }
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 20px 16px;
+    overflow-y: auto;
+  }
+  .sidebar-section { margin-bottom: 20px; }
+  .sidebar-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
+    color: var(--muted); text-transform: uppercase;
+    margin-bottom: 10px; padding: 0 4px;
+  }
+  .content { padding: 24px; overflow-y: auto; }
+  /* ===== FORM ELEMENTS ===== */
+  label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 5px; }
+  input[type="text"], input[type="number"], select, textarea {
+    width: 100%; padding: 8px 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Noto Sans Thai', sans-serif;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s;
+    margin-bottom: 10px;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  .btn {
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 12px; font-weight: 500;
+    font-family: 'Noto Sans Thai', sans-serif;
+    cursor: pointer; border: 1px solid var(--border2);
+    background: var(--surface2); color: var(--text);
+    transition: all 0.15s;
+  }
+  .btn:hover { background: var(--border); }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary {
+    background: var(--accent); color: #fff;
+    border-color: transparent;
+  }
+  .btn-primary:hover { background: #5558e8; }
+  .btn-success {
+    background: var(--green-dim); color: var(--green);
+    border-color: rgba(34,197,94,0.25);
+  }
+  .btn-danger {
+    background: var(--red-dim); color: var(--red);
+    border-color: rgba(239,68,68,0.2);
+  }
+  .btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
+  /* ===== KEY GRID ===== */
+  .key-table { width: 100%; border-collapse: collapse; }
+  .key-table td, .key-table th {
+    padding: 3px 2px; text-align: center;
+    font-size: 11px;
+  }
+  .key-table th { color: var(--muted); font-weight: 400; padding-bottom: 6px; }
+  .key-select-sm {
+    width: 44px; padding: 3px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text);
+    font-size: 11px;
+    font-family: 'IBM Plex Mono', monospace;
+    outline: none; cursor: pointer;
+    text-align: center;
+  }
+  .key-select-sm:focus { border-color: var(--accent); }
+  .q-num { font-family: 'IBM Plex Mono', monospace; color: var(--muted); font-size: 10px; }
+  /* ===== ANSWER GRID ===== */
+  .ans-section { margin-bottom: 24px; }
+  .section-heading {
+    font-size: 12px; font-weight: 600;
+    color: var(--muted); letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .ans-row {
+    display: grid;
+    grid-template-columns: 28px repeat(5, 32px);
+    gap: 4px;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  .ans-qnum {
+    font-size: 10px; color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    text-align: right; padding-right: 4px;
+  }
+  .ans-bubble {
+    width: 32px; height: 28px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface2);
+    color: var(--muted);
+    font-size: 11px; font-weight: 500;
+    font-family: 'IBM Plex Mono', monospace;
+    cursor: pointer;
+    transition: all 0.1s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ans-bubble:hover { border-color: var(--border2); color: var(--text); }
+  .ans-bubble.sel { background: var(--accent-dim); border-color: var(--accent); color: #a5b4fc; font-weight: 600; }
+  .ans-bubble.correct { background: var(--green-dim); border-color: rgba(34,197,94,0.4); color: var(--green); }
+  .ans-bubble.wrong { background: var(--red-dim); border-color: rgba(239,68,68,0.35); color: var(--red); }
+  .ans-bubble.blank { background: var(--amber-dim); border-color: rgba(245,158,11,0.3); color: var(--amber); }
+  /* ===== STUDENT TABS ===== */
+  .student-tabs {
+    display: flex; gap: 4px; flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .stu-tab {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px; cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent; color: var(--muted);
+    transition: all 0.15s;
+  }
+  .stu-tab:hover { border-color: var(--border2); color: var(--text); }
+  .stu-tab.active {
+    background: var(--accent-dim);
+    border-color: rgba(99,102,241,0.4);
+    color: #a5b4fc;
+  }
+  /* ===== METRICS ===== */
+  .metrics-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+  .metric-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .metric-card .lbl { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .metric-card .val { font-size: 22px; font-weight: 600; font-family: 'IBM Plex Mono', monospace; }
+  .val.green { color: var(--green); }
+  .val.red { color: var(--red); }
+  .val.amber { color: var(--amber); }
+  /* ===== RESULT GRID ===== */
+  .result-bubbles {
+    display: grid;
+    grid-template-columns: repeat(20, 1fr);
+    gap: 4px;
+    margin-bottom: 16px;
+  }
+  .res-bubble {
+    aspect-ratio: 1;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 500;
+  }
+  .res-bubble.correct { background: var(--green-dim); color: var(--green); border: 1px solid rgba(34,197,94,0.25); }
+  .res-bubble.wrong { background: var(--red-dim); color: var(--red); border: 1px solid rgba(239,68,68,0.2); }
+  .res-bubble.blank { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(245,158,11,0.2); }
+  .res-bubble.nokey { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+  /* ===== WRONG TABLE ===== */
+  .wrong-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .wrong-table th {
+    text-align: left; padding: 6px 10px;
+    color: var(--muted); font-weight: 500;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+  }
+  .wrong-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); }
+  .wrong-table tr:hover td { background: var(--surface2); }
+  .badge {
+    display: inline-block; padding: 2px 8px;
+    border-radius: 20px; font-size: 10px; font-weight: 600;
+  }
+  .badge-wrong { background: var(--red-dim); color: var(--red); }
+  .badge-blank { background: var(--amber-dim); color: var(--amber); }
+  .badge-correct { background: var(--green-dim); color: var(--green); }
+  /* ===== SPREADSHEET CONFIG ===== */
+  .config-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  .config-box .config-title { font-size: 12px; font-weight: 600; margin-bottom: 8px; }
+  /* ===== TOAST ===== */
+  #toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 13px;
+    display: none; z-index: 999;
+    animation: slideUp 0.2s ease;
+    max-width: 300px;
+  }
+  #toast.show { display: block; }
+  @keyframes slideUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  .mono { font-family: 'IBM Plex Mono', monospace; }
+  /* ===== TABS ===== */
+  .page-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+  .page-tab {
+    padding: 8px 18px; font-size: 13px;
+    border-bottom: 2px solid transparent;
+    cursor: pointer; color: var(--muted);
+    transition: all 0.15s;
+    margin-bottom: -1px;
+  }
+  .page-tab:hover { color: var(--text); }
+  .page-tab.active { color: #a5b4fc; border-bottom-color: var(--accent); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  /* ALL RESULTS TABLE */
+  .all-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .all-table th {
+    padding: 8px 10px; text-align: left;
+    color: var(--muted); font-weight: 500;
+    border-bottom: 1px solid var(--border); font-size: 11px;
+  }
+  .all-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  .all-table tr:hover td { background: var(--surface2); }
+  .score-bar-wrap { height: 4px; background: var(--surface2); border-radius: 2px; width: 80px; }
+  .score-bar { height: 4px; border-radius: 2px; background: var(--green); }
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="ku-logo">KU</div>
+    <h1>ระบบตรวจคะแนนสอบ</h1>
+    <p>กระดาษคำตอบ KU1060-1 · มหาวิทยาลัยเกษตรศาสตร์</p>
+    <button class="google-btn" onclick="signInWithGoogle()">
+      <svg width="18" height="18" viewBox="0 0 18 18">
+        <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
+        <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+        <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/>
+        <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
+      </svg>
+      เข้าสู่ระบบด้วย Google
+    </button>
+    <div class="login-notice">เฉพาะบัญชี <strong>suriya.p@ku.th</strong> เท่านั้น</div>
+    <div id="login-error" style="margin-top:10px;font-size:12px;color:var(--red);display:none;"></div>
+  </div>
+</div>
+
+<!-- APP SCREEN -->
+<div id="app-screen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">KU</div>
+      <span class="topbar-title">ระบบตรวจคะแนนสอบ</span>
+    </div>
+    <div class="topbar-right">
+      <div class="save-status">
+        <div class="save-dot" id="save-dot"></div>
+        <span id="save-text">พร้อมใช้งาน</span>
+      </div>
+      <div class="user-badge">
+        <div class="user-avatar"><img id="user-photo" src="" alt=""/></div>
+        <span id="user-name"></span>
+      </div>
+      <button class="btn btn-danger" onclick="signOut()" style="padding:4px 10px;font-size:11px;">ออกจากระบบ</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">ชุดข้อสอบ</div>
+        <label>ชื่อวิชา</label>
+        <input type="text" id="subject-name" placeholder="เช่น คณิตศาสตร์พื้นฐาน" />
+        <label>รหัสวิชา</label>
+        <input type="text" id="subject-code" placeholder="เช่น 01999001" />
+        <label>ภาคเรียน / ปีการศึกษา</label>
+        <input type="text" id="semester" placeholder="เช่น 1/2568" />
+        <label>จำนวนข้อ</label>
+        <select id="num-questions" onchange="rebuildKeyGrid()">
+          <option value="20">20 ข้อ</option>
+          <option value="40">40 ข้อ</option>
+          <option value="60" selected>60 ข้อ</option>
+        </select>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">เฉลย</div>
+        <div id="key-grid-container" style="max-height:380px;overflow-y:auto;"></div>
+        <div class="btn-group" style="margin-top:8px;">
+          <button class="btn" onclick="importKeyString()">นำเข้า</button>
+          <button class="btn" onclick="fillRandom()">สุ่ม</button>
+          <button class="btn btn-danger" onclick="clearKey()">ล้าง</button>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Google Sheets</div>
+        <div class="config-box">
+          <div class="config-title">Apps Script URL</div>
+          <textarea id="script-url" rows="3" placeholder="https://script.google.com/macros/s/.../exec" style="font-size:11px;font-family:'IBM Plex Mono',monospace;resize:none;margin-bottom:0;"></textarea>
+          <button class="btn btn-success" onclick="saveConfig()" style="width:100%;margin-top:6px;">บันทึก URL</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content">
+      <div class="page-tabs">
+        <div class="page-tab active" onclick="switchTab('grade')">ตรวจคะแนน</div>
+        <div class="page-tab" onclick="switchTab('results')">สรุปผล</div>
+      </div>
+
+      <!-- GRADE TAB -->
+      <div class="tab-panel active" id="tab-grade">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+          <input type="text" id="stu-name" placeholder="ชื่อ-นามสกุล" style="width:200px;margin-bottom:0;" />
+          <input type="text" id="stu-id" placeholder="รหัสนิสิต" style="width:140px;margin-bottom:0;" />
+          <input type="text" id="stu-section" placeholder="กลุ่ม/ห้อง" style="width:100px;margin-bottom:0;" />
+          <button class="btn btn-primary" onclick="addStudent()">+ เพิ่มนักเรียน</button>
+        </div>
+
+        <div class="student-tabs" id="student-tabs"></div>
+        <div id="student-area">
+          <div style="font-size:13px;color:var(--muted);padding:40px 0;text-align:center;">
+            เพิ่มนักเรียนเพื่อเริ่มกรอกคำตอบ
+          </div>
+        </div>
+      </div>
+
+      <!-- RESULTS TAB -->
+      <div class="tab-panel" id="tab-results">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+          <div class="section-heading" style="margin-bottom:0;border:none;padding:0;">ผลคะแนนทั้งหมด ({{N}} คน)</div>
+          <div class="btn-group">
+            <button class="btn btn-success" onclick="saveAllToSheet()">บันทึกลง Google Sheet</button>
+            <button class="btn" onclick="exportCSV()">ส่งออก CSV</button>
+          </div>
+        </div>
+        <div id="all-results-table"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- Google Identity Services -->
+<script src="https://accounts.google.com/gsi/client" async></script>
+
+<script>
+// ===== CONFIG =====
+const ALLOWED_EMAIL = 'suriya.p@ku.th';
+const CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID'; // <<< ใส่ Client ID ตรงนี้
+
+// ===== STATE =====
+let answerKey = [];
+let students = [];
+let activeIdx = -1;
+let scriptUrl = localStorage.getItem('ku_script_url') || '';
+let userInfo = null;
+
+// ===== INIT =====
+window.onload = () => {
+  if (scriptUrl) document.getElementById('script-url').value = scriptUrl;
+  const saved = localStorage.getItem('ku_session');
+  if (saved) {
+    try { userInfo = JSON.parse(saved); showApp(); } catch(e) { localStorage.removeItem('ku_session'); }
+  }
+  initKeyGrid(60);
+};
+
+// ===== AUTH =====
+function signInWithGoogle() {
+  if (!window.google) { showToast('กำลังโหลด Google SDK...'); return; }
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: 'email profile',
+    callback: async (res) => {
+      if (res.error) { showLoginError('เกิดข้อผิดพลาด: ' + res.error); return; }
+      const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: 'Bearer ' + res.access_token }
+      });
+      const info = await r.json();
+      if (info.email !== ALLOWED_EMAIL) {
+        showLoginError('บัญชีนี้ไม่มีสิทธิ์เข้าใช้งาน (' + info.email + ')');
+        return;
+      }
+      userInfo = info;
+      localStorage.setItem('ku_session', JSON.stringify(info));
+      showApp();
+    }
+  });
+  client.requestAccessToken();
+}
+
+function signOut() {
+  localStorage.removeItem('ku_session');
+  userInfo = null;
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'block';
+  if (userInfo) {
+    document.getElementById('user-name').textContent = userInfo.email;
+    document.getElementById('user-photo').src = userInfo.picture || '';
+  }
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('login-error');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+// ===== KEY GRID =====
+const OPTS = ['A','B','C','D','E'];
+function initKeyGrid(n) {
+  answerKey = new Array(n).fill('');
+  rebuildKeyGrid();
+}
+function rebuildKeyGrid() {
+  const n = parseInt(document.getElementById('num-questions').value);
+  answerKey = new Array(n).fill('');
+  const container = document.getElementById('key-grid-container');
+  const rows = Math.ceil(n / 10);
+  let html = '<table class="key-table"><thead><tr><th></th>';
+  for(let c=0;c<Math.min(10,n);c++) html += '<th></th>';
+  html += '</tr></thead><tbody>';
+  for(let r=0;r<rows;r++) {
+    for(let pass=0;pass<2;pass++) {
+      html += '<tr>';
+      if(pass===0) {
+        html += `<td class="q-num" style="padding-right:4px;">${r*10+1}</td>`;
+        for(let c=0;c<10;c++) {
+          const i = r*10+c;
+          if(i>=n){html+='<td></td>';continue;}
+          html += `<td class="q-num">${i+1}</td>`;
+        }
+      } else {
+        html += '<td></td>';
+        for(let c=0;c<10;c++) {
+          const i = r*10+c;
+          if(i>=n){html+='<td></td>';continue;}
+          html += `<td><select class="key-select-sm" data-ki="${i}" onchange="onKeyChange(${i},this.value)">
+            <option value="">-</option>
+            ${OPTS.map(o=>`<option value="${o}">${o}</option>`).join('')}
+          </select></td>`;
+        }
+      }
+      html += '</tr>';
+    }
+  }
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+function onKeyChange(i, val) {
+  answerKey[i] = val;
+  if(activeIdx>=0) renderResult();
+}
+function fillRandom() {
+  const n = answerKey.length;
+  answerKey = Array.from({length:n}, ()=>OPTS[Math.floor(Math.random()*5)]);
+  syncKeyUI(); if(activeIdx>=0) renderResult();
+}
+function clearKey() {
+  answerKey = new Array(answerKey.length).fill('');
+  syncKeyUI(); if(activeIdx>=0) renderResult();
+}
+function syncKeyUI() {
+  document.querySelectorAll('.key-select-sm').forEach(s => {
+    s.value = answerKey[parseInt(s.dataset.ki)] || '';
+  });
+}
+function importKeyString() {
+  const raw = prompt('วางเฉลย (A-E ต่อกัน หรือคั่นด้วยช่องว่าง):');
+  if(!raw) return;
+  const parsed = raw.toUpperCase().replace(/[^ABCDE]/g,'');
+  const n = answerKey.length;
+  if(parsed.length < n) { showToast(`ต้องการ ${n} ตัว ได้รับ ${parsed.length} ตัว`); return; }
+  answerKey = parsed.slice(0,n).split('');
+  syncKeyUI(); if(activeIdx>=0) renderResult();
+  showToast('นำเข้าเฉลยสำเร็จ');
+}
+
+// ===== STUDENTS =====
+function addStudent() {
+  const name = document.getElementById('stu-name').value.trim() || ('นักเรียน '+(students.length+1));
+  const id = document.getElementById('stu-id').value.trim();
+  const section = document.getElementById('stu-section').value.trim();
+  students.push({ name, id, section, answers: new Array(answerKey.length).fill('') });
+  document.getElementById('stu-name').value = '';
+  document.getElementById('stu-id').value = '';
+  activeIdx = students.length - 1;
+  renderTabs();
+  renderAnswerArea();
+  renderResult();
+  updateAllTable();
+}
+function renderTabs() {
+  const tabs = document.getElementById('student-tabs');
+  tabs.innerHTML = students.map((s,i)=>
+    `<div class="stu-tab ${i===activeIdx?'active':''}" onclick="switchStu(${i})">${s.name}</div>`
+  ).join('');
+}
+function switchStu(i) {
+  activeIdx = i; renderTabs(); renderAnswerArea(); renderResult();
+}
+
+function renderAnswerArea() {
+  const area = document.getElementById('student-area');
+  if(activeIdx<0||!students.length){ area.innerHTML='<div style="font-size:13px;color:var(--muted);padding:40px 0;text-align:center;">เพิ่มนักเรียนเพื่อเริ่มกรอกคำตอบ</div>'; return; }
+  const stu = students[activeIdx];
+  const n = stu.answers.length;
+  const cols = 10;
+  let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <div><span style="font-size:14px;font-weight:600;">${stu.name}</span> ${stu.id?`<span class="mono" style="font-size:11px;color:var(--muted);margin-left:8px;">${stu.id}</span>`:''}${stu.section?`<span style="font-size:11px;color:var(--muted);margin-left:8px;">กลุ่ม ${stu.section}</span>`:''}</div>
+    <button class="btn btn-danger" onclick="removeStu(${activeIdx})" style="padding:4px 10px;font-size:11px;">ลบ</button>
+  </div>`;
+  // answer grid - 10 cols
+  html += '<div style="display:grid;grid-template-columns:repeat(10,1fr);gap:8px;">';
+  for(let i=0;i<n;i++) {
+    html += `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+      <div class="q-num" style="font-size:9px;">${i+1}</div>`;
+    OPTS.forEach(opt => {
+      const sel = stu.answers[i]===opt ? 'sel' : '';
+      html += `<button class="ans-bubble ${sel}" onclick="setBubble(${i},'${opt}',this)">${opt}</button>`;
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+  html += `<div id="result-area" style="margin-top:20px;"></div>`;
+  area.innerHTML = html;
+  renderResult();
+}
+
+function setBubble(q, opt, el) {
+  if(activeIdx<0) return;
+  const stu = students[activeIdx];
+  stu.answers[q] = stu.answers[q]===opt ? '' : opt;
+  // update UI
+  const col = el.closest('div[style*="flex-direction"]');
+  col.querySelectorAll('.ans-bubble').forEach(b => {
+    const o = b.textContent.trim();
+    b.className = 'ans-bubble' + (o===stu.answers[q]?' sel':'');
+  });
+  renderResult();
+  updateAllTable();
+}
+
+function removeStu(i) {
+  if(!confirm('ลบนักเรียนนี้?')) return;
+  students.splice(i,1);
+  activeIdx = students.length>0 ? Math.min(i, students.length-1) : -1;
+  renderTabs(); renderAnswerArea(); updateAllTable();
+}
+
+// ===== RESULT =====
+function renderResult() {
+  const area = document.getElementById('result-area');
+  if(!area || activeIdx<0) return;
+  const stu = students[activeIdx];
+  const n = stu.answers.length;
+  let correct=0, wrong=0, blank=0, nokey=0;
+  const statuses = stu.answers.map((a,i) => {
+    if(!answerKey[i]){nokey++;return'nokey';}
+    if(!a){blank++;return'blank';}
+    if(a===answerKey[i]){correct++;return'correct';}
+    wrong++;return'wrong';
+  });
+  const scored = n-nokey;
+  const pct = scored>0?Math.round(correct/scored*100):0;
+
+  let html = `<div class="metrics-row">
+    <div class="metric-card"><div class="lbl">ถูก</div><div class="val green">${correct}</div></div>
+    <div class="metric-card"><div class="lbl">ผิด</div><div class="val red">${wrong}</div></div>
+    <div class="metric-card"><div class="lbl">ไม่ตอบ</div><div class="val amber">${blank}</div></div>
+    <div class="metric-card"><div class="lbl">คะแนน</div><div class="val ${pct>=50?'green':'red'}">${pct}%</div></div>
+  </div>`;
+
+  // result bubbles
+  html += '<div class="result-bubbles">';
+  statuses.forEach((st,i) => {
+    html += `<div class="res-bubble ${st}" title="ข้อ ${i+1}: ตอบ ${stu.answers[i]||'-'}, เฉลย ${answerKey[i]||'?'}">${i+1}</div>`;
+  });
+  html += '</div>';
+
+  // wrong list
+  const wrongs = statuses.map((st,i)=>({st,i})).filter(x=>x.st!=='correct'&&x.st!=='nokey');
+  if(wrongs.length>0) {
+    html += `<table class="wrong-table" style="margin-top:8px;">
+      <thead><tr><th>ข้อ</th><th>คำตอบของนักเรียน</th><th>เฉลย</th><th>สถานะ</th></tr></thead><tbody>`;
+    wrongs.forEach(({st,i}) => {
+      html += `<tr><td class="mono">${i+1}</td>
+        <td class="mono" style="color:var(--red);">${stu.answers[i]||'-'}</td>
+        <td class="mono" style="color:var(--green);">${answerKey[i]}</td>
+        <td><span class="badge ${st==='wrong'?'badge-wrong':'badge-blank'}">${st==='blank'?'ไม่ตอบ':'ผิด'}</span></td></tr>`;
+    });
+    html += '</tbody></table>';
+  } else if(scored>0) {
+    html += `<div style="font-size:13px;color:var(--green);padding:12px 0;">ตอบถูกทุกข้อที่มีเฉลย</div>`;
+  }
+
+  html += `<div class="btn-group" style="margin-top:14px;">
+    <button class="btn btn-success" onclick="saveOneToSheet(${activeIdx})">บันทึกลง Sheet</button>
+  </div>`;
+  area.innerHTML = html;
+  students[activeIdx]._pct = pct;
+  students[activeIdx]._correct = correct;
+  students[activeIdx]._scored = scored;
+}
+
+// ===== ALL TABLE =====
+function updateAllTable() {
+  const el = document.getElementById('all-results-table');
+  if(!el) return;
+  if(!students.length) { el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:20px 0;">ยังไม่มีข้อมูลนักเรียน</div>'; return; }
+  document.querySelector('.page-tab:last-child + .tab-panel .section-heading, #tab-results .section-heading') // update count
+  let html = `<table class="all-table"><thead><tr>
+    <th>#</th><th>ชื่อ</th><th>รหัสนิสิต</th><th>กลุ่ม</th><th>ถูก</th><th>คะแนน %</th><th></th>
+  </tr></thead><tbody>`;
+  students.forEach((s,i) => {
+    let c=0,t=0;
+    s.answers.forEach((a,j)=>{ if(answerKey[j]){t++;if(a===answerKey[j])c++;} });
+    const pct = t>0?Math.round(c/t*100):0;
+    const barW = pct;
+    html += `<tr>
+      <td class="mono" style="color:var(--muted);">${i+1}</td>
+      <td>${s.name}</td>
+      <td class="mono">${s.id||'-'}</td>
+      <td>${s.section||'-'}</td>
+      <td class="mono">${c}/${t}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="score-bar-wrap"><div class="score-bar" style="width:${barW}%;background:${pct>=50?'var(--green)':'var(--red)'};"></div></div>
+          <span class="mono" style="font-size:11px;color:${pct>=50?'var(--green)':'var(--red)'}">${pct}%</span>
+        </div>
+      </td>
+      <td><button class="btn" style="padding:3px 8px;font-size:11px;" onclick="switchStu(${i});switchTab('grade')">ดู</button></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+// ===== TABS =====
+function switchTab(name) {
+  document.querySelectorAll('.page-tab').forEach((t,i)=>{
+    const names = ['grade','results'];
+    t.classList.toggle('active', names[i]===name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p=>{
+    p.classList.toggle('active', p.id==='tab-'+name);
+  });
+  if(name==='results') updateAllTable();
+}
+
+// ===== GOOGLE SHEET =====
+function saveConfig() {
+  scriptUrl = document.getElementById('script-url').value.trim();
+  localStorage.setItem('ku_script_url', scriptUrl);
+  showToast('บันทึก URL สำเร็จ');
+}
+
+function buildPayload(stu) {
+  const n = stu.answers.length;
+  let correct=0, total=0;
+  const details = stu.answers.map((a,i)=>{
+    if(!answerKey[i]) return null;
+    total++;
+    if(a===answerKey[i]) correct++;
+    return { q: i+1, ans: a||'', key: answerKey[i], status: !a?'blank':a===answerKey[i]?'correct':'wrong' };
+  }).filter(Boolean);
+  const pct = total>0?Math.round(correct/total*100):0;
+  return {
+    subject: document.getElementById('subject-name').value,
+    code: document.getElementById('subject-code').value,
+    semester: document.getElementById('semester').value,
+    name: stu.name,
+    id: stu.id,
+    section: stu.section,
+    correct, total, pct,
+    answers: stu.answers.join(','),
+    details: JSON.stringify(details),
+    timestamp: new Date().toISOString(),
+    savedBy: userInfo?.email || ''
+  };
+}
+
+async function saveOneToSheet(idx) {
+  if(!scriptUrl){ showToast('กรุณาใส่ Apps Script URL ก่อน'); return; }
+  setSaveStatus('saving','กำลังบันทึก...');
+  try {
+    const payload = buildPayload(students[idx]);
+    await fetch(scriptUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    setSaveStatus('saved','บันทึกแล้ว');
+    showToast(`บันทึก ${students[idx].name} ลง Google Sheet สำเร็จ`);
+  } catch(e) {
+    setSaveStatus('','ผิดพลาด'); showToast('เกิดข้อผิดพลาด: '+e.message);
+  }
+}
+
+async function saveAllToSheet() {
+  if(!scriptUrl){ showToast('กรุณาใส่ Apps Script URL ก่อน'); return; }
+  if(!students.length){ showToast('ไม่มีข้อมูลนักเรียน'); return; }
+  setSaveStatus('saving','กำลังบันทึก...');
+  for(let i=0;i<students.length;i++) {
+    try {
+      await fetch(scriptUrl, {
+        method: 'POST', mode: 'no-cors',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(buildPayload(students[i]))
+      });
+    } catch(e) { console.error(e); }
+  }
+  setSaveStatus('saved','บันทึกแล้ว');
+  showToast(`บันทึก ${students.length} คน ลง Google Sheet สำเร็จ`);
+}
+
+// ===== CSV =====
+function exportCSV() {
+  if(!students.length){showToast('ไม่มีข้อมูล');return;}
+  let csv = '\uFEFF';
+  csv += 'ชื่อ,รหัสนิสิต,กลุ่ม,ถูก,ข้อที่มีเฉลย,คะแนน%\n';
+  students.forEach(s=>{
+    let c=0,t=0;
+    s.answers.forEach((a,i)=>{if(answerKey[i]){t++;if(a===answerKey[i])c++;}});
+    const pct=t>0?Math.round(c/t*100):0;
+    csv+=`"${s.name}","${s.id||''}","${s.section||''}",${c},${t},${pct}\n`;
+  });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  a.download=`exam_results_${Date.now()}.csv`;a.click();
+}
+
+// ===== UTILS =====
+function setSaveStatus(state, text) {
+  const dot = document.getElementById('save-dot');
+  const txt = document.getElementById('save-text');
+  dot.className = 'save-dot' + (state?(' '+state):'');
+  txt.textContent = text;
+}
+let toastTimer;
+function showToast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),3000);
+}
+</script>
+</body>
+</html>
