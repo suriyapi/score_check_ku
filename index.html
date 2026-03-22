@@ -477,7 +477,7 @@ async function analyzeImage() {
 
     const response = await fetch(scriptUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({
         action: 'analyze',
         imageBase64: currentImageB64,
@@ -733,8 +733,8 @@ async function saveOneToSheet(idx) {
   setSaveStatus('saving','กำลังบันทึก...');
   try {
     await fetch(scriptUrl, {
-      method:'POST', mode:'no-cors',
-      headers:{'Content-Type':'application/json'},
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
       body: JSON.stringify(examResults[idx])
     });
     setSaveStatus('saved','บันทึกแล้ว'); showToast('บันทึกลง Google Sheet สำเร็จ');
@@ -746,7 +746,7 @@ async function saveAllToSheet() {
   if (!examResults.length) { showToast('ไม่มีผลการตรวจ'); return; }
   setSaveStatus('saving','กำลังบันทึก...');
   for (const r of examResults) {
-    try { await fetch(scriptUrl, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify(r) }); }
+    try { await fetch(scriptUrl, { method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(r) }); }
     catch(e) { console.error(e); }
   }
   setSaveStatus('saved','บันทึกแล้ว'); showToast(`บันทึก ${examResults.length} คน สำเร็จ`);
